@@ -43,5 +43,8 @@
 # VSCode
 .vscode-server/
 
+# Jetbrains IDEs
+.idea/
+
 # Build
 build/
