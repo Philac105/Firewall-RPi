@@ -52,14 +52,7 @@ private:
         }
     };
 
-<<<<<<< HEAD
     PacketDecision process_packet(const PacketMeta& packet) noexcept;
-=======
-    static constexpr int kRealtimePriority = 90;
-    static constexpr std::uint64_t kWcetThresholdNs = 1'000'000;
-
-    PacketDecision process_packet(const PacketMeta &packet) noexcept;
->>>>>>> 0c842545d28b8c5dbe77b2dcb7a908b26aa5258d
 
     AsyncLogger &logger_;
     PacketCapture capture_;
