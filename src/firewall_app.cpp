@@ -20,6 +20,15 @@ bool FirewallApp::initialize(const int cpu_core, std::string_view interface_name
         return false;
     }
 
+    const auto rt = set_realtime_scheduling(kRealtimePriority);
+    if (!rt.ok) {
+        logger_.log(LogLevel::Warning, "Failed to set SCHED_FIFO – running without RT scheduling");
+    } else {
+        char msg[80];
+        std::snprintf(msg, sizeof(msg), "SCHED_FIFO activated, priority=%d", kRealtimePriority);
+        logger_.log(LogLevel::Info, msg);
+    }
+
     PacketCaptureConfig config;
     config.interface_name = interface_name;
 
@@ -45,6 +54,7 @@ void FirewallApp::run() {
     std::uint64_t interval_passed = 0;
     std::uint64_t interval_dropped = 0;
     std::uint64_t interval_timeouts = 0;
+    LatencyStats latency{};
 
     while (running_) {
         if (!capture_.capture_one(packet, error)) {
@@ -56,7 +66,20 @@ void FirewallApp::run() {
         }
 
         if (packet.packet_length > 0) {
-            const PacketDecision decision = process_packet(packet);
+            const auto t0 = clock::now();
+            PacketDecision decision = process_packet(packet);
+            const auto t1 = clock::now();
+
+            const auto elapsed_ns = static_cast<std::uint64_t>(
+                std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
+
+            if (elapsed_ns > kWcetThresholdNs) {
+                decision = PacketDecision::Drop;
+                logger_.log(LogLevel::Warning, "WCET exceeded - packet dropped (fail-safe)");
+            }
+
+            latency.record(elapsed_ns);
+
             if (decision == PacketDecision::Pass) {
                 ++interval_passed;
             } else {
@@ -70,19 +93,36 @@ void FirewallApp::run() {
         const auto now = clock::now();
         if (now >= next_report) {
             char report[120];
-            std::snprintf(
-                report,
-                sizeof(report),
-                "Alive: passed/s=%llu dropped/s=%llu timeouts/s=%llu",
-                static_cast<unsigned long long>(interval_passed),
-                static_cast<unsigned long long>(interval_dropped),
-                static_cast<unsigned long long>(interval_timeouts)
-            );
+            if (latency.count > 0) {
+                const std::uint64_t avg_ns = latency.total_ns / latency.count;
+                std::snprintf(
+                    report,
+                    sizeof(report),
+                    "pass=%llu drop=%llu tout=%llu | lat min=%lluns avg=%lluns max=%lluns wcet_viol=%llu",
+                    static_cast<unsigned long long>(interval_passed),
+                    static_cast<unsigned long long>(interval_dropped),
+                    static_cast<unsigned long long>(interval_timeouts),
+                    static_cast<unsigned long long>(latency.min_ns),
+                    static_cast<unsigned long long>(avg_ns),
+                    static_cast<unsigned long long>(latency.max_ns),
+                    static_cast<unsigned long long>(latency.wcet_violations)
+                );
+            } else {
+                std::snprintf(
+                    report,
+                    sizeof(report),
+                    "pass=%llu drop=%llu tout=%llu | no packets",
+                    static_cast<unsigned long long>(interval_passed),
+                    static_cast<unsigned long long>(interval_dropped),
+                    static_cast<unsigned long long>(interval_timeouts)
+                );
+            }
             logger_.log(LogLevel::Info, report);
 
             interval_passed = 0;
             interval_dropped = 0;
             interval_timeouts = 0;
+            latency.reset();
             next_report = now + std::chrono::seconds(1);
         }
     }

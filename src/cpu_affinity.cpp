@@ -14,3 +14,14 @@ AffinityResult pin_process_to_cpu(const std::uint32_t cpu_index) noexcept {
 
     return {.ok = true, .error_code = 0};
 }
+
+AffinityResult set_realtime_scheduling(const int priority) noexcept {
+    struct sched_param param{};
+    param.sched_priority = priority;
+
+    if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
+        return {.ok = false, .error_code = errno};
+    }
+
+    return {.ok = true, .error_code = 0};
+}

@@ -8,3 +8,5 @@ struct AffinityResult {
 };
 
 AffinityResult pin_process_to_cpu(std::uint32_t cpu_index) noexcept;
+
+AffinityResult set_realtime_scheduling(int priority) noexcept;
