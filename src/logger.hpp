@@ -34,7 +34,9 @@ private:
 
     struct Message {
         LogLevel level;
+        // Actual message length stored in text (excluding null terminator).
         std::uint16_t len;
+        // Fixed-size payload buffer used by the ring queue.
         char text[kMessageMaxLen + 1];
     };
 

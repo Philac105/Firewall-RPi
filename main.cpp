@@ -5,7 +5,7 @@
 #include "src/firewall_app.hpp"
 #include "src/logger.hpp"
 
-namespace {
+
 struct CliConfig {
     int cpu_core = 3;
     std::string interface_name = "wlan0";
@@ -46,7 +46,6 @@ bool parse_cli(const int argc, char** argv, CliConfig& config) {
     }
 
     return true;
-}
 }
 
 int main(int argc, char** argv) {
