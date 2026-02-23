@@ -10,6 +10,7 @@ FirewallApp::FirewallApp(AsyncLogger &logger) : logger_(logger) {
 }
 
 FirewallApp::PacketDecision FirewallApp::process_packet(const PacketMeta &packet) noexcept {
+    // Here will be the actual packet processing logic. For L01, we simply pass all packets.
     (void) packet;
     return PacketDecision::Pass;
 }
