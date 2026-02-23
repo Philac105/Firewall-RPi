@@ -17,15 +17,19 @@ enum class LogLevel : std::uint8_t {
 class AsyncLogger {
 public:
     AsyncLogger() = default;
+
     ~AsyncLogger();
 
-    AsyncLogger(const AsyncLogger&) = delete;
-    AsyncLogger& operator=(const AsyncLogger&) = delete;
+    AsyncLogger(const AsyncLogger &) = delete;
+
+    AsyncLogger &operator=(const AsyncLogger &) = delete;
 
     void start();
+
     void stop();
 
     void log(LogLevel level, std::string_view message) noexcept;
+
     std::uint64_t dropped_count() const noexcept;
 
 private:
@@ -39,7 +43,8 @@ private:
     };
 
     void worker_loop();
-    static const char* level_to_text(LogLevel level) noexcept;
+
+    static const char *level_to_text(LogLevel level) noexcept;
 
     alignas(64) std::array<Message, kQueueSize> queue_{};
     alignas(64) std::atomic<std::uint32_t> head_{0};

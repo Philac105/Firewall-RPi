@@ -6,7 +6,7 @@ PacketCapture::~PacketCapture() {
     close();
 }
 
-bool PacketCapture::open(const PacketCaptureConfig& config, std::string& error_message) {
+bool PacketCapture::open(const PacketCaptureConfig &config, std::string &error_message) {
     close();
 
     char errbuf[PCAP_ERRBUF_SIZE] = {0};
@@ -26,16 +26,16 @@ bool PacketCapture::open(const PacketCaptureConfig& config, std::string& error_m
     return true;
 }
 
-bool PacketCapture::capture_one(PacketMeta& packet_meta, std::string& error_message) {
+bool PacketCapture::capture_one(PacketMeta &packet_meta, std::string &error_message) {
     if (!handle_) {
         error_message = "capture handle not initialized";
         return false;
     }
 
-    pcap_pkthdr* header = nullptr;
-    const u_char* data = nullptr;
+    pcap_pkthdr *header = nullptr;
+    const u_char *data = nullptr;
     const int result = pcap_next_ex(handle_, &header, &data);
-    (void)data;
+    (void) data;
 
     if (result > 0 && header) {
         packet_meta.packet_length = header->len;

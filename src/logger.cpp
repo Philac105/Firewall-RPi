@@ -37,7 +37,7 @@ void AsyncLogger::log(LogLevel level, std::string_view message) noexcept {
         return;
     }
 
-    Message& slot = queue_[tail];
+    Message &slot = queue_[tail];
     slot.level = level;
 
     const std::size_t size = message.size() < kMessageMaxLen ? message.size() : kMessageMaxLen;
@@ -52,7 +52,7 @@ std::uint64_t AsyncLogger::dropped_count() const noexcept {
     return dropped_.load(std::memory_order_relaxed);
 }
 
-const char* AsyncLogger::level_to_text(const LogLevel level) noexcept {
+const char *AsyncLogger::level_to_text(const LogLevel level) noexcept {
     switch (level) {
         case LogLevel::Info:
             return "INFO";
@@ -75,7 +75,7 @@ void AsyncLogger::worker_loop() {
             continue;
         }
 
-        const Message& message = queue_[head];
+        const Message &message = queue_[head];
         std::fprintf(stderr, "[%s] %s\n", level_to_text(message.level), message.text);
 
         head_.store((head + 1U) % kQueueSize, std::memory_order_release);

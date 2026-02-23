@@ -6,10 +6,11 @@
 
 #include "cpu_affinity.hpp"
 
-FirewallApp::FirewallApp(AsyncLogger& logger) : logger_(logger) {}
+FirewallApp::FirewallApp(AsyncLogger &logger) : logger_(logger) {
+}
 
-FirewallApp::PacketDecision FirewallApp::process_packet(const PacketMeta& packet) noexcept {
-    (void)packet;
+FirewallApp::PacketDecision FirewallApp::process_packet(const PacketMeta &packet) noexcept {
+    (void) packet;
     return PacketDecision::Pass;
 }
 
