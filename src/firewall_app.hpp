@@ -9,9 +9,10 @@
 
 class FirewallApp {
 public:
-    explicit FirewallApp(AsyncLogger& logger);
+    explicit FirewallApp(AsyncLogger &logger);
 
     bool initialize(int cpu_core, std::string_view interface_name);
+
     void run();
 
 private:
@@ -51,9 +52,16 @@ private:
         }
     };
 
+<<<<<<< HEAD
     PacketDecision process_packet(const PacketMeta& packet) noexcept;
+=======
+    static constexpr int kRealtimePriority = 90;
+    static constexpr std::uint64_t kWcetThresholdNs = 1'000'000;
 
-    AsyncLogger& logger_;
+    PacketDecision process_packet(const PacketMeta &packet) noexcept;
+>>>>>>> 0c842545d28b8c5dbe77b2dcb7a908b26aa5258d
+
+    AsyncLogger &logger_;
     PacketCapture capture_;
     bool running_ = false;
 };

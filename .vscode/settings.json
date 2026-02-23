@@ -1,4 +1,4 @@
 {
-    "cmake.sourceDirectory": "/home/user/repos/Firewall-RPi",
-    "cmake.cmakePath": "/usr/local/bin/cmake"
+  "cmake.sourceDirectory": "/home/user/repos/Firewall-RPi",
+  "cmake.cmakePath": "/usr/local/bin/cmake"
 }

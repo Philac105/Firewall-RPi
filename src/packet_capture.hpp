@@ -25,15 +25,19 @@ struct PacketMeta {
 class PacketCapture {
 public:
     PacketCapture() = default;
+
     ~PacketCapture();
 
-    PacketCapture(const PacketCapture&) = delete;
-    PacketCapture& operator=(const PacketCapture&) = delete;
+    PacketCapture(const PacketCapture &) = delete;
 
-    bool open(const PacketCaptureConfig& config, std::string& error_message);
-    bool capture_one(PacketMeta& packet_meta, std::string& error_message);
+    PacketCapture &operator=(const PacketCapture &) = delete;
+
+    bool open(const PacketCaptureConfig &config, std::string &error_message);
+
+    bool capture_one(PacketMeta &packet_meta, std::string &error_message);
+
     void close() noexcept;
 
 private:
-    pcap_t* handle_ = nullptr;
+    pcap_t *handle_ = nullptr;
 };
