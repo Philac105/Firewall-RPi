@@ -1,0 +1,21 @@
+[Unit]
+Description=Firewall RPi realtime service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/pi/Firewall-RPi
+ExecStart=/home/pi/Firewall-RPi/build/Firewall_RPi --iface wlan0 --cpu 3
+Restart=always
+RestartSec=1
+WatchdogSec=10
+
+# Realtime tuning for deterministic packet path
+CPUAffinity=3
+LimitRTPRIO=95
+LimitMEMLOCK=infinity
+
+[Install]
+WantedBy=multi-user.target

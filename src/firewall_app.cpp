@@ -5,14 +5,18 @@
 #include <string>
 
 #include "cpu_affinity.hpp"
+#include "structs/latency_stats.hpp"
 
-FirewallApp::FirewallApp(AsyncLogger &logger) : logger_(logger) {
+FirewallApp::FirewallApp(AsyncLogger &logger) : logger_(logger), policy_() {
 }
 
-FirewallApp::PacketDecision FirewallApp::process_packet(const PacketMeta &packet) noexcept {
-    // Here will be the actual packet processing logic. For L01, we simply pass all packets.
-    (void) packet;
-    return PacketDecision::Pass;
+FirewallDecision FirewallApp::process_packet(const PacketMeta &packet) noexcept {
+    const auto now = std::chrono::steady_clock::now().time_since_epoch();
+    const std::uint64_t now_ns = static_cast<std::uint64_t>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
+    
+    const FirewallDecision decision = policy_.evaluate(packet, now_ns);
+    return decision;
 }
 
 bool FirewallApp::initialize(const int cpu_core, std::string_view interface_name) {
@@ -59,37 +63,52 @@ void FirewallApp::run() {
     LatencyStats latency{};
 
     while (running_) {
-        if (!capture_.capture_one(packet, error)) {
-            std::string message = "Capture failed: ";
-            message += error;
-            logger_.log(LogLevel::Error, message);
-            running_ = false;
-            continue;
-        }
-
-        if (packet.packet_length > 0) {
-            const auto t0 = clock::now();
-            PacketDecision decision = process_packet(packet);
-            const auto t1 = clock::now();
-
-            const auto elapsed_ns = static_cast<std::uint64_t>(
-                std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
-
-            if (elapsed_ns > kWcetThresholdNs) {
-                decision = PacketDecision::Drop;
-                logger_.log(LogLevel::Warning, "WCET exceeded - packet dropped (fail-safe)");
+        const PacketCapture::CaptureStatus status = capture_.capture_one(packet, error);
+        switch (status) {
+            case PacketCapture::CaptureStatus::FatalError: {
+                std::string message = "Capture failed: ";
+                message += error;
+                logger_.log(LogLevel::Error, message);
+                running_ = false;
+                continue;
             }
 
-            latency.record(elapsed_ns);
+            case PacketCapture::CaptureStatus::StreamEnded:
+                logger_.log(LogLevel::Info, "Capture stream ended");
+                running_ = false;
+                continue;
 
-            if (decision == PacketDecision::Pass) {
-                ++interval_passed;
-            } else {
+            case PacketCapture::CaptureStatus::Ipv4Ready: {
+                const auto t0 = clock::now();
+                FirewallDecision decision = process_packet(packet);
+                const auto t1 = clock::now();
+
+                const auto elapsed_ns = static_cast<std::uint64_t>(
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
+
+                if (elapsed_ns > kWcetThresholdNs) {
+                    decision = FirewallDecision::Drop;
+                    logger_.log(LogLevel::Warning, "WCET exceeded - packet dropped (fail-safe)");
+                }
+
+                latency.record(elapsed_ns, kWcetThresholdNs);
+
+                if (decision == FirewallDecision::Pass) {
+                    ++interval_passed;
+                } else {
+                    ++interval_dropped;
+                }
+                packet.packet_length = 0;
+                break;
+            }
+
+            case PacketCapture::CaptureStatus::IgnoredPacket:
                 ++interval_dropped;
-            }
-            packet.packet_length = 0;
-        } else {
-            ++interval_timeouts;
+                break;
+
+            case PacketCapture::CaptureStatus::Timeout:
+                ++interval_timeouts;
+                break;
         }
 
         const auto now = clock::now();
@@ -120,6 +139,7 @@ void FirewallApp::run() {
                 );
             }
             logger_.log(LogLevel::Info, report);
+            report_rule_hits();
 
             interval_passed = 0;
             interval_dropped = 0;
@@ -128,4 +148,8 @@ void FirewallApp::run() {
             next_report = now + std::chrono::seconds(1);
         }
     }
+}
+
+void FirewallApp::report_rule_hits() noexcept {
+    logger_.log(LogLevel::Info, policy_.report_counters());
 }

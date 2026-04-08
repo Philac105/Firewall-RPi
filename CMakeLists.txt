@@ -9,6 +9,7 @@ add_executable(Firewall_RPi
         src/logger.cpp
         src/cpu_affinity.cpp
         src/packet_capture.cpp
+        src/firewall_policy.cpp
         src/firewall_app.cpp
 )
 

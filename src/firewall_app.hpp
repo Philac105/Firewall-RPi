@@ -1,11 +1,12 @@
 #pragma once
 
 #include <cstdint>
-#include <limits>
 #include <string_view>
 
+#include "firewall_policy.hpp"
 #include "logger.hpp"
 #include "packet_capture.hpp"
+#include "structs/firewall_decision.hpp"
 
 class FirewallApp {
 public:
@@ -15,46 +16,16 @@ public:
 
     void run();
 
-private:
-    static constexpr int kRealtimePriority = 90;
     static constexpr std::uint64_t kWcetThresholdNs = 1'000'000;
 
-    enum class PacketDecision : unsigned char {
-        Pass,
-        Drop,
-    };
+private:
+    static constexpr int kRealtimePriority = 90;
 
-    struct LatencyStats {
-        // Number of packets measured in the current report window.
-        std::uint64_t count = 0;
-        // Sum of per-packet latency values (ns) for average calculation.
-        std::uint64_t total_ns = 0;
-        // Smallest and largest observed processing times (ns).
-        std::uint64_t min_ns = std::numeric_limits<std::uint64_t>::max();
-        std::uint64_t max_ns = 0;
-        // Packets that exceeded the WCET threshold.
-        std::uint64_t wcet_violations = 0;
-
-        void record(std::uint64_t elapsed_ns) noexcept {
-            ++count;
-            total_ns += elapsed_ns;
-            if (elapsed_ns < min_ns) min_ns = elapsed_ns;
-            if (elapsed_ns > max_ns) max_ns = elapsed_ns;
-            if (elapsed_ns > FirewallApp::kWcetThresholdNs) ++wcet_violations;
-        }
-
-        void reset() noexcept {
-            count = 0;
-            total_ns = 0;
-            min_ns = std::numeric_limits<std::uint64_t>::max();
-            max_ns = 0;
-            wcet_violations = 0;
-        }
-    };
-
-    PacketDecision process_packet(const PacketMeta& packet) noexcept;
+    FirewallDecision process_packet(const PacketMeta& packet) noexcept;
+    void report_rule_hits() noexcept;
 
     AsyncLogger &logger_;
     PacketCapture capture_;
+    FirewallPolicy policy_;
     bool running_ = false;
 };
