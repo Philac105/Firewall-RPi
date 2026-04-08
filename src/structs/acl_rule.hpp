@@ -11,6 +11,6 @@ struct ACLRule {
     std::uint16_t dst_port = 0;
     // True to pass matching packets, false to drop.
     bool allow = true;
-    // Human-readable rule label for logging/debug.
+    // Label for logging/debug.
     const char *name = "";
 };

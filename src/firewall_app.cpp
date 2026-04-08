@@ -7,8 +7,7 @@
 #include "cpu_affinity.hpp"
 #include "structs/latency_stats.hpp"
 
-FirewallApp::FirewallApp(AsyncLogger &logger) : logger_(logger), policy_() {
-}
+FirewallApp::FirewallApp(AsyncLogger &logger) : logger_(logger), policy_() {}
 
 FirewallDecision FirewallApp::process_packet(const PacketMeta &packet) noexcept {
     const auto now = std::chrono::steady_clock::now().time_since_epoch();
