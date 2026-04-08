@@ -2,10 +2,17 @@
 
 #include <chrono>
 #include <cstdio>
+#include <ctime>
 #include <string>
 
 #include "cpu_affinity.hpp"
-#include "structs/latency_stats.hpp"
+
+static void format_timestamp(char *buffer, const std::size_t buffer_size) {
+    const std::time_t now = std::time(nullptr);
+    std::tm local_tm{};
+    localtime_r(&now, &local_tm);
+    std::strftime(buffer, buffer_size, "%Y-%m-%d %H:%M:%S", &local_tm);
+}
 
 FirewallApp::FirewallApp(AsyncLogger &logger) : logger_(logger), policy_() {}
 
@@ -55,9 +62,10 @@ void FirewallApp::run() {
     PacketMeta packet{};
 
     using clock = std::chrono::steady_clock;
-    auto next_report = clock::now() + std::chrono::seconds(1);
+    auto next_report = clock::now() + std::chrono::seconds(kReportIntervalSeconds);
     std::uint64_t interval_passed = 0;
     std::uint64_t interval_dropped = 0;
+    std::uint64_t interval_ignored = 0;
     std::uint64_t interval_timeouts = 0;
     LatencyStats latency{};
 
@@ -102,7 +110,7 @@ void FirewallApp::run() {
             }
 
             case PacketCapture::CaptureStatus::IgnoredPacket:
-                ++interval_dropped;
+                ++interval_ignored;
                 break;
 
             case PacketCapture::CaptureStatus::Timeout:
@@ -112,43 +120,80 @@ void FirewallApp::run() {
 
         const auto now = clock::now();
         if (now >= next_report) {
-            char report[120];
-            if (latency.count > 0) {
-                const std::uint64_t avg_ns = latency.total_ns / latency.count;
-                std::snprintf(
-                    report,
-                    sizeof(report),
-                    "pass=%llu drop=%llu tout=%llu | lat min=%lluns avg=%lluns max=%lluns wcet_viol=%llu",
-                    static_cast<unsigned long long>(interval_passed),
-                    static_cast<unsigned long long>(interval_dropped),
-                    static_cast<unsigned long long>(interval_timeouts),
-                    static_cast<unsigned long long>(latency.min_ns),
-                    static_cast<unsigned long long>(avg_ns),
-                    static_cast<unsigned long long>(latency.max_ns),
-                    static_cast<unsigned long long>(latency.wcet_violations)
-                );
-            } else {
-                std::snprintf(
-                    report,
-                    sizeof(report),
-                    "pass=%llu drop=%llu tout=%llu | no packets",
-                    static_cast<unsigned long long>(interval_passed),
-                    static_cast<unsigned long long>(interval_dropped),
-                    static_cast<unsigned long long>(interval_timeouts)
-                );
-            }
-            logger_.log(LogLevel::Info, report);
-            report_rule_hits();
+            char timestamp[32];
+            format_timestamp(timestamp, sizeof(timestamp));
+            log_interval_report(
+                timestamp,
+                interval_passed,
+                interval_dropped,
+                interval_ignored,
+                interval_timeouts,
+                latency
+            );
 
             interval_passed = 0;
             interval_dropped = 0;
+            interval_ignored = 0;
             interval_timeouts = 0;
             latency.reset();
-            next_report = now + std::chrono::seconds(1);
+            next_report = now + std::chrono::seconds(kReportIntervalSeconds);
         }
     }
 }
 
-void FirewallApp::report_rule_hits() noexcept {
-    logger_.log(LogLevel::Info, policy_.report_counters());
+void FirewallApp::log_interval_report(
+    const char *timestamp,
+    const std::uint64_t interval_passed,
+    const std::uint64_t interval_dropped,
+    const std::uint64_t interval_ignored,
+    const std::uint64_t interval_timeouts,
+    const LatencyStats &latency
+) noexcept {
+    logger_.log(LogLevel::Info, "----------------------------------------");
+
+    char traffic_report[160];
+    std::snprintf(
+        traffic_report,
+        sizeof(traffic_report),
+        "ts=%s | traffic pass=%llu drop=%llu ign=%llu tout=%llu",
+        timestamp,
+        static_cast<unsigned long long>(interval_passed),
+        static_cast<unsigned long long>(interval_dropped),
+        static_cast<unsigned long long>(interval_ignored),
+        static_cast<unsigned long long>(interval_timeouts)
+    );
+
+    char latency_report[160];
+    if (latency.count > 0) {
+        const std::uint64_t avg_ns = latency.total_ns / latency.count;
+        std::snprintf(
+            latency_report,
+            sizeof(latency_report),
+            "ts=%s | latency min=%lluns avg=%lluns max=%lluns wcet_viol=%llu",
+            timestamp,
+            static_cast<unsigned long long>(latency.min_ns),
+            static_cast<unsigned long long>(avg_ns),
+            static_cast<unsigned long long>(latency.max_ns),
+            static_cast<unsigned long long>(latency.wcet_violations)
+        );
+    } else {
+        std::snprintf(
+            latency_report,
+            sizeof(latency_report),
+            "ts=%s | lat no packets",
+            timestamp
+        );
+    }
+
+    logger_.log(LogLevel::Info, traffic_report);
+    logger_.log(LogLevel::Info, latency_report);
+    report_rule_hits(timestamp);
+}
+
+void FirewallApp::report_rule_hits(const char *timestamp) noexcept {
+    std::string msg = "ts=";
+    msg += timestamp;
+    msg += " | ";
+    msg += policy_.report_counters();
+    logger_.log(LogLevel::Info, msg);
 }

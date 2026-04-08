@@ -1,7 +1,7 @@
 #include "logger.hpp"
 
-#include <chrono>
 #include <cstdio>
+#include <mutex>
 
 AsyncLogger::~AsyncLogger() {
     stop();
@@ -21,6 +21,8 @@ void AsyncLogger::stop() {
     if (!running_.compare_exchange_strong(expected, false, std::memory_order_acq_rel)) {
         return;
     }
+
+    wake_cv_.notify_all();
 
     if (worker_.joinable()) {
         worker_.join();
@@ -46,6 +48,7 @@ void AsyncLogger::log(LogLevel level, std::string_view message) noexcept {
     slot.text[size] = '\0';
 
     tail_.store(next, std::memory_order_release);
+    wake_cv_.notify_one();
 }
 
 std::uint64_t AsyncLogger::dropped_count() const noexcept {
@@ -65,20 +68,28 @@ const char *AsyncLogger::level_to_text(const LogLevel level) noexcept {
 }
 
 void AsyncLogger::worker_loop() {
+    std::unique_lock<std::mutex> lock(wake_mutex_);
+
     while (running_.load(std::memory_order_acquire)
            || head_.load(std::memory_order_acquire) != tail_.load(std::memory_order_acquire)) {
-        const std::uint32_t head = head_.load(std::memory_order_relaxed);
-        const std::uint32_t tail = tail_.load(std::memory_order_acquire);
+        wake_cv_.wait(lock, [this] {
+            return !running_.load(std::memory_order_acquire)
+                   || head_.load(std::memory_order_acquire) != tail_.load(std::memory_order_acquire);
+        });
 
-        if (head == tail) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            continue;
+        lock.unlock();
+        while (true) {
+            const std::uint32_t head = head_.load(std::memory_order_relaxed);
+            const std::uint32_t tail = tail_.load(std::memory_order_acquire);
+            if (head == tail) {
+                break;
+            }
+
+            const Message &message = queue_[head];
+            std::fprintf(stderr, "[%s] %s\n", level_to_text(message.level), message.text);
+            head_.store((head + 1U) % kQueueSize, std::memory_order_release);
         }
-
-        const Message &message = queue_[head];
-        std::fprintf(stderr, "[%s] %s\n", level_to_text(message.level), message.text);
-
-        head_.store((head + 1U) % kQueueSize, std::memory_order_release);
+        lock.lock();
     }
 
     const std::uint64_t dropped = dropped_count();

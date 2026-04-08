@@ -4,7 +4,9 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <condition_variable>
 #include <cstring>
+#include <mutex>
 #include <string_view>
 #include <thread>
 
@@ -54,5 +56,7 @@ private:
 
     std::atomic<bool> running_{false};
     std::atomic<std::uint64_t> dropped_{0};
+    std::mutex wake_mutex_;
+    std::condition_variable wake_cv_;
     std::thread worker_;
 };

@@ -160,16 +160,26 @@ FirewallPolicy::Decision FirewallPolicy::evaluate(const PacketMeta &packet, cons
     return Decision::Pass;
 }
 
-std::string FirewallPolicy::report_counters() const {
+std::string FirewallPolicy::report_counters() {
+    auto hits_for = [this](const std::uint32_t id) -> std::uint64_t {
+        const auto it = rule_hits_.find(id);
+        return (it != rule_hits_.end()) ? it->second : 0;
+    };
+
     std::ostringstream oss;
-    oss << "rules";
-    for (const ACLRule &rule : acl_rules_) {
-        const auto it = rule_hits_.find(rule.id);
-        const std::uint64_t hits = (it != rule_hits_.end()) ? it->second : 0;
-        oss << " r" << rule.id << "=" << hits;
+    oss << "rules"
+        << " est=" << hits_for(1)
+        << " p22=" << hits_for(2)
+        << " p443=" << hits_for(3)
+        << " p53u=" << hits_for(4)
+        << " p53t=" << hits_for(5)
+        << " deny=" << hits_for(1000)
+        << " rate_drop=" << rate_limited_drops_;
+
+    for (auto &entry : rule_hits_) {
+        entry.second = 0;
     }
-    const auto stateful_it = rule_hits_.find(1);
-    const std::uint64_t stateful_hits = (stateful_it != rule_hits_.end()) ? stateful_it->second : 0;
-    oss << " r1=" << stateful_hits << " rate_drop=" << rate_limited_drops_;
+    rate_limited_drops_ = 0;
+
     return oss.str();
 }

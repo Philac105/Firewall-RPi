@@ -7,6 +7,7 @@
 #include "logger.hpp"
 #include "packet_capture.hpp"
 #include "structs/firewall_decision.hpp"
+#include "structs/latency_stats.hpp"
 
 class FirewallApp {
 public:
@@ -20,9 +21,18 @@ public:
 
 private:
     static constexpr int kRealtimePriority = 90;
+    static constexpr int kReportIntervalSeconds = 5;
 
     FirewallDecision process_packet(const PacketMeta& packet) noexcept;
-    void report_rule_hits() noexcept;
+    void log_interval_report(
+        const char *timestamp,
+        std::uint64_t interval_passed,
+        std::uint64_t interval_dropped,
+        std::uint64_t interval_ignored,
+        std::uint64_t interval_timeouts,
+        const LatencyStats &latency
+    ) noexcept;
+    void report_rule_hits(const char *timestamp) noexcept;
 
     AsyncLogger &logger_;
     PacketCapture capture_;

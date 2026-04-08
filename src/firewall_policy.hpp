@@ -23,7 +23,7 @@ public:
 
     Decision evaluate(const PacketMeta &packet, std::uint64_t now_ns) noexcept;
 
-    std::string report_counters() const;
+    std::string report_counters();
 
 private:
     static constexpr std::uint8_t kProtoTcp = 6;
