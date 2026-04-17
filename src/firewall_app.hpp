@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <cstdint>
 #include <string_view>
 
 #include "firewall_policy.hpp"
@@ -26,7 +25,8 @@ private:
     static constexpr int kRealtimePriority = 90;
     static constexpr int kReportIntervalSeconds = 5;
 
-    FirewallDecision process_packet(const PacketMeta& packet) noexcept;
+    FirewallDecision process_packet(const PacketMeta &packet) noexcept;
+
     void log_interval_report(
         const char *timestamp,
         std::uint64_t interval_passed,
@@ -35,6 +35,7 @@ private:
         std::uint64_t interval_timeouts,
         const LatencyStats &latency
     ) noexcept;
+
     void report_rule_hits(const char *timestamp) noexcept;
 
     AsyncLogger &logger_;

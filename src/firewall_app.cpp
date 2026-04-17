@@ -17,13 +17,14 @@ static void format_timestamp(char *buffer, const std::size_t buffer_size) {
     std::strftime(buffer, buffer_size, "%Y-%m-%d %H:%M:%S", &local_tm);
 }
 
-FirewallApp::FirewallApp(AsyncLogger &logger) : logger_(logger), policy_() {}
+FirewallApp::FirewallApp(AsyncLogger &logger) : logger_(logger), policy_() {
+}
 
 FirewallDecision FirewallApp::process_packet(const PacketMeta &packet) noexcept {
     const auto now = std::chrono::steady_clock::now().time_since_epoch();
     const std::uint64_t now_ns = static_cast<std::uint64_t>(
         std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
-    
+
     const FirewallDecision decision = policy_.evaluate(packet, now_ns);
     return decision;
 }

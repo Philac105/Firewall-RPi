@@ -5,7 +5,6 @@
 
 #include <chrono>
 #include <sstream>
-#include <thread>
 
 FirewallPolicy::FirewallPolicy() {
     initialize_default_acl();
@@ -19,7 +18,7 @@ void FirewallPolicy::initialize_default_acl() {
 
     acl_rules_.push_back({1000, 0, 0, false, "deny_all"});
 
-    for (const ACLRule &rule : acl_rules_) {
+    for (const ACLRule &rule: acl_rules_) {
         rule_hits_[rule.id] = 0;
     }
     rule_hits_[1] = 0;
@@ -71,15 +70,15 @@ void FirewallPolicy::remember_flow(const PacketMeta &packet) noexcept {
 }
 
 bool FirewallPolicy::is_admin_traffic(const PacketMeta &packet) const noexcept {
-    if (!packet.has_ipv4 || packet.ip_protocol != kProtoTcp) {
+    if (packet.ip_protocol != kProtoTcp) {
         return false;
     }
 
-    for (std::uint16_t allowed_port : kAllowedAdminPorts) {
-            if (packet.dst_port == allowed_port) {
-                return true;
-            }
+    for (std::uint16_t allowed_port: kAllowedAdminPorts) {
+        if (packet.dst_port == allowed_port) {
+            return true;
         }
+    }
     return false;
 }
 
@@ -88,7 +87,7 @@ bool FirewallPolicy::apply_rate_limit(
     const std::uint64_t now_ns,
     const bool high_priority
 ) noexcept {
-    if (!packet.has_ipv4 || high_priority) {
+    if (high_priority) {
         return true;
     }
 
@@ -120,18 +119,13 @@ bool FirewallPolicy::apply_rate_limit(
 }
 
 FirewallPolicy::Decision FirewallPolicy::apply_acl(const PacketMeta &packet, DecisionContext &ctx) noexcept {
-    if (!packet.has_ipv4) {
-        ++rule_hits_[1000];
-        return Decision::Drop;
-    }
-
     if (is_established_flow(packet)) {
         ++rule_hits_[1];
         ctx.is_admin_traffic = is_admin_traffic(packet);
         return Decision::Pass;
     }
 
-    for (const ACLRule &rule : acl_rules_) {
+    for (const ACLRule &rule: acl_rules_) {
         if (rule.id == 1000) {
             continue;
         }
@@ -179,15 +173,15 @@ std::string FirewallPolicy::report_counters() {
 
     std::ostringstream oss;
     oss << "rules"
-        << " est=" << hits_for(1)
-        << " p22=" << hits_for(2)
-        << " p443=" << hits_for(3)
-        << " p53u=" << hits_for(4)
-        << " p53t=" << hits_for(5)
-        << " deny=" << hits_for(1000)
-        << " rate_drop=" << rate_limited_drops_;
+            << " est=" << hits_for(1)
+            << " p22=" << hits_for(2)
+            << " p443=" << hits_for(3)
+            << " p53u=" << hits_for(4)
+            << " p53t=" << hits_for(5)
+            << " deny=" << hits_for(1000)
+            << " rate_drop=" << rate_limited_drops_;
 
-    for (auto &entry : rule_hits_) {
+    for (auto &entry: rule_hits_) {
         entry.second = 0;
     }
     rate_limited_drops_ = 0;

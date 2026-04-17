@@ -4,6 +4,7 @@
 #include "logger.hpp"
 
 #include <cstdio>
+#include <cstring>
 #include <mutex>
 
 AsyncLogger::~AsyncLogger() {

@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <pcap.h>
-
 #include <string>
 
 #include "structs/packet_capture_config.hpp"

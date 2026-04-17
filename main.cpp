@@ -14,7 +14,7 @@ struct CliConfig {
     std::string interface_name = "wlan0";
 };
 
-bool parse_int(const std::string& value, int& output) {
+bool parse_int(const std::string &value, int &output) {
     try {
         output = std::stoi(value);
         return true;
@@ -23,7 +23,7 @@ bool parse_int(const std::string& value, int& output) {
     }
 }
 
-bool parse_cli(const int argc, char** argv, CliConfig& config) {
+bool parse_cli(const int argc, char **argv, CliConfig &config) {
     for (int i = 1; i < argc; ++i) {
         const std::string arg = argv[i];
 
@@ -51,7 +51,7 @@ bool parse_cli(const int argc, char** argv, CliConfig& config) {
     return true;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     CliConfig config;
     if (!parse_cli(argc, argv, config)) {
         std::cerr << "Usage: Firewall_RPi [--iface <name>] [--cpu <index>]" << std::endl;

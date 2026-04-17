@@ -3,8 +3,6 @@
 
 #include "packet_capture.hpp"
 
-#include <cstring>
-
 static constexpr std::size_t kEtherTypeIPv4 = 0x0800;
 static constexpr std::size_t kProtoTcp = 6;
 static constexpr std::size_t kProtoUdp = 17;
@@ -79,12 +77,12 @@ PacketCapture::CaptureStatus PacketCapture::capture_one(PacketMeta &packet_meta,
         }
 
         const std::uint8_t *ip = data + kEthernetHeaderLen;
-        const std::uint8_t version = static_cast<std::uint8_t>((ip[0] >> kIpv4VersionShift) & kIpv4IhlMask);
+        const auto version = static_cast<std::uint8_t>((ip[0] >> kIpv4VersionShift) & kIpv4IhlMask);
         if (version != 4) {
             return CaptureStatus::IgnoredPacket;
         }
 
-        const std::uint8_t ihl_words = static_cast<std::uint8_t>(ip[0] & kIpv4IhlMask);
+        const auto ihl_words = static_cast<std::uint8_t>(ip[0] & kIpv4IhlMask);
         const std::size_t ihl_bytes = static_cast<std::size_t>(ihl_words) * kIpv4WordSizeBytes;
         if (ihl_bytes < kMinIpv4HeaderLen || header->caplen < kEthernetHeaderLen + ihl_bytes) {
             return CaptureStatus::IgnoredPacket;
@@ -92,12 +90,17 @@ PacketCapture::CaptureStatus PacketCapture::capture_one(PacketMeta &packet_meta,
 
         packet_meta.has_ipv4 = true;
         packet_meta.ip_protocol = ip[kIpv4ProtocolOffset];
-        packet_meta.src_ip = {ip[kIpv4SrcIpOffset], ip[kIpv4SrcIpOffset + 1], ip[kIpv4SrcIpOffset + 2], ip[kIpv4SrcIpOffset + 3]};
-        packet_meta.dst_ip = {ip[kIpv4DstIpOffset], ip[kIpv4DstIpOffset + 1], ip[kIpv4DstIpOffset + 2], ip[kIpv4DstIpOffset + 3]};
+        packet_meta.src_ip = {
+            ip[kIpv4SrcIpOffset], ip[kIpv4SrcIpOffset + 1], ip[kIpv4SrcIpOffset + 2], ip[kIpv4SrcIpOffset + 3]
+        };
+        packet_meta.dst_ip = {
+            ip[kIpv4DstIpOffset], ip[kIpv4DstIpOffset + 1], ip[kIpv4DstIpOffset + 2], ip[kIpv4DstIpOffset + 3]
+        };
 
         const std::uint8_t *l4 = ip + ihl_bytes;
         const std::size_t l4_len = header->caplen - (kEthernetHeaderLen + ihl_bytes);
-        if ((packet_meta.ip_protocol == kProtoTcp || packet_meta.ip_protocol == kProtoUdp) && l4_len >= kMinPortHeaderLen) {
+        if ((packet_meta.ip_protocol == kProtoTcp || packet_meta.ip_protocol == kProtoUdp) && l4_len >=
+            kMinPortHeaderLen) {
             packet_meta.src_port = read_be16(l4);
             packet_meta.dst_port = read_be16(l4 + 2);
         }

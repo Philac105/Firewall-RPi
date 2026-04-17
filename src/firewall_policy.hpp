@@ -4,7 +4,6 @@
 #pragma once
 
 #include <array>
-#include <cstdint>
 #include <deque>
 #include <string>
 #include <unordered_map>
@@ -36,13 +35,21 @@ private:
     static constexpr std::uint16_t kAllowedAdminPorts[] = {kAdminPortSsh, kAdminPortHttps};
 
     void initialize_default_acl();
+
     static std::uint32_t ip_to_u32(const std::array<std::uint8_t, 4> &ip) noexcept;
+
     static FlowKey forward_flow(const PacketMeta &packet) noexcept;
+
     static FlowKey reverse_flow(const PacketMeta &packet) noexcept;
+
     bool is_established_flow(const PacketMeta &packet) noexcept;
+
     void remember_flow(const PacketMeta &packet) noexcept;
+
     bool is_admin_traffic(const PacketMeta &packet) const noexcept;
+
     bool apply_rate_limit(const PacketMeta &packet, std::uint64_t now_ns, bool high_priority) noexcept;
+
     Decision apply_acl(const PacketMeta &packet, DecisionContext &ctx) noexcept;
 
     std::vector<ACLRule> acl_rules_;

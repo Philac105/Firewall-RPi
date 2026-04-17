@@ -8,7 +8,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <condition_variable>
-#include <cstring>
 #include <mutex>
 #include <string_view>
 #include <thread>
@@ -35,7 +34,7 @@ public:
 
     void log(LogLevel level, std::string_view message) noexcept;
 
-    std::uint64_t dropped_count() const noexcept;
+    [[nodiscard]] std::uint64_t dropped_count() const noexcept;
 
 private:
     static constexpr std::size_t kQueueSize = 1024;
