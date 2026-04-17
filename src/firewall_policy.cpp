@@ -1,6 +1,11 @@
+// Fait par: Philippe Lacasse (lacp2116)
+// Dernière modification par: Philippe Lacasse (lacp2116)
+
 #include "firewall_policy.hpp"
 
+#include <chrono>
 #include <sstream>
+#include <thread>
 
 FirewallPolicy::FirewallPolicy() {
     initialize_default_acl();
@@ -69,7 +74,13 @@ bool FirewallPolicy::is_admin_traffic(const PacketMeta &packet) const noexcept {
     if (!packet.has_ipv4 || packet.ip_protocol != kProtoTcp) {
         return false;
     }
-    return packet.dst_port == kAdminPortSsh || packet.dst_port == kAdminPortHttps;
+
+    for (std::uint16_t allowed_port : kAllowedAdminPorts) {
+            if (packet.dst_port == allowed_port) {
+                return true;
+            }
+        }
+    return false;
 }
 
 bool FirewallPolicy::apply_rate_limit(

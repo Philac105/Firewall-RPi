@@ -1,18 +1,21 @@
+// Fait par: Xavier Breton (brex1001)
+// Dernière modification par: Xavier Breton (brex1001)
+
 #include "packet_capture.hpp"
 
 #include <cstring>
 
-static constexpr std::uint16_t kEtherTypeIPv4 = 0x0800;
-static constexpr std::uint8_t kProtoTcp = 6;
-static constexpr std::uint8_t kProtoUdp = 17;
+static constexpr std::size_t kEtherTypeIPv4 = 0x0800;
+static constexpr std::size_t kProtoTcp = 6;
+static constexpr std::size_t kProtoUdp = 17;
 static constexpr std::size_t kEthernetHeaderLen = 14U;
 static constexpr std::size_t kMinIpv4HeaderLen = 20U;
 static constexpr std::size_t kIpv4WordSizeBytes = 4U;
 static constexpr std::size_t kMinPortHeaderLen = 4U;
 static constexpr std::size_t kMinTcpHeaderLenForFlags = 14U;
 static constexpr std::size_t kEtherTypeOffset = 12U;
-static constexpr std::uint8_t kIpv4VersionShift = 4U;
-static constexpr std::uint8_t kIpv4IhlMask = 0x0FU;
+static constexpr std::size_t kIpv4VersionShift = 4U;
+static constexpr std::size_t kIpv4IhlMask = 0x0FU;
 static constexpr std::size_t kIpv4ProtocolOffset = 9U;
 static constexpr std::size_t kIpv4SrcIpOffset = 12U;
 static constexpr std::size_t kIpv4DstIpOffset = 16U;

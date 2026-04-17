@@ -1,3 +1,6 @@
+// Fait par: Xavier Breton (brex1001)
+// Dernière modification par: Philippe Lacasse (lacp2116)
+
 #pragma once
 
 #include <array>

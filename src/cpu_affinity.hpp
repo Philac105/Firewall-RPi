@@ -1,3 +1,6 @@
+// Fait par: Philippe Lacasse (lacp2116)
+// Dernière modification par: Philippe Lacasse (lacp2116)
+
 #pragma once
 
 #include <cstdint>

@@ -1,3 +1,6 @@
+// Fait par: Philippe Lacasse (lacp2116)
+// Dernière modification par: Philippe Lacasse (lacp2116)
+
 #include "cpu_affinity.hpp"
 
 #include <cerrno>

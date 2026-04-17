@@ -1,3 +1,6 @@
+// Fait par: Xavier Breton (brex1001)
+// Dernière modification par: Xavier Breton (brex1001)
+
 #include "logger.hpp"
 
 #include <cstdio>

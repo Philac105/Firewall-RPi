@@ -1,3 +1,6 @@
+// Fait par: Philippe Lacasse (lacp2116)
+// Dernière modification par: Xavier Breton (brex1001)
+
 #pragma once
 
 #include <array>
@@ -30,6 +33,7 @@ private:
     static constexpr std::uint8_t kProtoUdp = 17;
     static constexpr std::uint16_t kAdminPortSsh = 22;
     static constexpr std::uint16_t kAdminPortHttps = 443;
+    static constexpr std::uint16_t kAllowedAdminPorts[] = {kAdminPortSsh, kAdminPortHttps};
 
     void initialize_default_acl();
     static std::uint32_t ip_to_u32(const std::array<std::uint8_t, 4> &ip) noexcept;
